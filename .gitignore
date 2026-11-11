@@ -1,0 +1,10 @@
+# Customer data: never commit real exports or generated reports
+output/
+*.csv
+*.pdf
+!sample/*.csv
+!examples/**/*.csv
+
+__pycache__/
+*.pyc
+.DS_Store

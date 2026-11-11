@@ -1,0 +1,723 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Acme – New Relic usage report</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&display=swap" rel="stylesheet">
+<style>
+:root{
+  color-scheme: light;
+  --ink:#12294A; --ink2:#41546E; --mute:#7A8A9E; --line:#DCE3EA; --paper:#F7F9FB; --white:#fff;
+  --full:#12294A; --basic:#8EA3BC; --core:#3A9E9A; --tick:#E0A21B;
+  --up:#0B7A4B; --down:#C2412D;
+  --h0:#EEF5F1; --h1:#C9E6D5; --h2:#8FCDAA; --h3:#47AD78; --h4:#0B7A4B; --h5:#05532F;
+  --font:"Archivo","Helvetica Neue",Helvetica,Arial,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--font);font-size:15px;line-height:1.5}
+body{font-variant-numeric:tabular-nums}
+button,input,select{font:inherit;color:inherit}
+[hidden]{display:none!important}
+:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.wrap{max-width:1240px;margin:0 auto;padding:0 32px}
+
+/* top bar */
+.bar{background:var(--ink);color:#fff}
+.bar .wrap{display:flex;align-items:center;gap:16px;min-height:60px;flex-wrap:wrap;padding-top:10px;padding-bottom:10px}
+.mark{font-weight:800;font-stretch:115%;letter-spacing:.02em;font-size:20px}
+.mark small{font-weight:400;font-stretch:100%;opacity:.7;font-size:14px;margin-left:8px;letter-spacing:0}
+.bar .sp{flex:1}
+.btn{border:1px solid rgba(255,255,255,.35);background:transparent;color:#fff;border-radius:6px;padding:7px 14px;cursor:pointer;font-size:14px}
+.btn:hover{background:rgba(255,255,255,.1)}
+.btn.solid{background:#fff;color:var(--ink);border-color:#fff;font-weight:600}
+.btn.solid:hover{background:#E6ECF2}
+input[type=file]{display:none}
+
+/* hero */
+.hero{padding:44px 0 8px}
+.period{color:var(--ink2);font-size:15px;margin:0 0 10px}
+h1{font-stretch:72%;font-weight:700;font-size:clamp(32px,4.6vw,58px);line-height:1.04;letter-spacing:-.01em;margin:0 0 22px;max-width:26ch}
+.stats{display:flex;flex-wrap:wrap;gap:0;border-top:2px solid var(--ink);margin-top:8px}
+.stat{padding:14px 28px 14px 0;margin-right:28px;min-width:130px}
+.stat b{display:block;font-size:30px;font-weight:700;font-stretch:80%;line-height:1.1}
+.stat span{color:var(--ink2);font-size:13px}
+.delta{font-size:12px;font-weight:600;margin-left:6px;font-stretch:100%}
+.delta.up{color:var(--up)} .delta.down{color:var(--down)} .delta.flat{color:var(--mute)}
+
+section{padding:40px 0 8px}
+h2{font-stretch:85%;font-weight:700;font-size:26px;margin:0 0 4px;line-height:1.2}
+.lede{color:var(--ink2);margin:0 0 20px;max-width:72ch}
+
+/* matrix */
+.matrix-wrap{overflow-x:auto;background:var(--white);border:1px solid var(--line);border-radius:10px;padding:16px 16px 10px}
+table.mx{border-collapse:separate;border-spacing:2px;font-size:12px}
+.mx th.col{height:128px;vertical-align:bottom;padding:0;width:22px;min-width:22px}
+.mx th.col div{transform:translateX(13px) rotate(-58deg);transform-origin:left bottom;white-space:nowrap;width:22px;font-weight:500;color:var(--ink2)}
+.mx td.u{white-space:nowrap;padding-right:10px;font-size:12.5px;max-width:230px;overflow:hidden;text-overflow:ellipsis}
+.mx td.t{padding-right:8px}
+.mx td.c{width:22px;min-width:22px;max-width:22px;height:18px;padding:0;border-radius:3px;background:#F3F6F9}
+.mx td.c[data-l="1"]{background:var(--h1)} .mx td.c[data-l="2"]{background:var(--h2)}
+.mx td.c[data-l="3"]{background:var(--h3)} .mx td.c[data-l="4"]{background:var(--h4)} .mx td.c[data-l="5"]{background:var(--h5)}
+.chip{display:inline-block;font-size:11px;font-weight:600;padding:1px 7px;border-radius:10px;line-height:1.5}
+.chip.FULL{background:var(--full);color:#fff} .chip.BASIC{background:#E3E9F0;color:var(--ink2)} .chip.CORE{background:#D5EFED;color:#1F625F}
+.legend{display:flex;align-items:center;gap:14px;flex-wrap:wrap;color:var(--ink2);font-size:13px;margin-top:12px}
+.ramp{display:inline-flex;gap:2px;vertical-align:middle;margin:0 6px}
+.ramp i{width:18px;height:12px;border-radius:2px;display:inline-block}
+.mx-ctl{display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap;font-size:14px;color:var(--ink2)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden;background:#fff}
+.seg button{border:0;background:transparent;padding:5px 12px;cursor:pointer;font-size:13px}
+.seg button[aria-pressed=true]{background:var(--ink);color:#fff}
+
+/* adoption */
+.grid2{display:grid;grid-template-columns:1.55fr 1fr;gap:28px}
+.panel{background:var(--white);border:1px solid var(--line);border-radius:10px;padding:22px}
+.panel h3{margin:0 0 4px;font-size:17px;font-weight:700}
+.panel p.s{margin:0 0 16px;color:var(--ink2);font-size:13.5px}
+.ad-row{display:grid;grid-template-columns:168px 1fr auto;align-items:center;gap:12px;padding:4px 0;font-size:13.5px}
+.ad-row .lab{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.track{position:relative;height:16px;background:#EEF2F6;border-radius:3px;display:flex;overflow:visible}
+.track i{display:block;height:100%}
+.track i:first-child{border-radius:3px 0 0 3px}
+.track .tick{position:absolute;top:-4px;bottom:-4px;width:3px;margin-left:-1px;background:var(--tick);border-radius:1px}
+.ad-row .num{text-align:right;color:var(--ink2);white-space:nowrap;min-width:96px}
+.ad-row .num b{color:var(--ink);font-weight:600}
+.keys{display:flex;gap:16px;font-size:13px;color:var(--ink2);margin:0 0 12px;flex-wrap:wrap}
+.keys i{display:inline-block;width:11px;height:11px;border-radius:2px;margin-right:6px;vertical-align:-1px}
+
+.donut-box{display:flex;align-items:center;gap:22px;flex-wrap:wrap}
+.donut-box ul{list-style:none;padding:0;margin:0;font-size:14px}
+.donut-box li{margin:6px 0}
+.donut-box li b{font-weight:700;margin-right:4px}
+.hist{display:flex;align-items:flex-end;gap:10px;height:170px;margin-top:6px;padding-top:10px;border-bottom:1px solid var(--line)}
+.hist .col{flex:1;display:flex;flex-direction:column-reverse;align-items:stretch;height:100%;position:relative}
+.hist .col i{display:block}
+.hist .col span.v{position:absolute;left:0;right:0;text-align:center;font-size:12px;color:var(--ink2)}
+.hist-l{display:flex;gap:10px;font-size:12px;color:var(--ink2);margin-top:6px}
+.hist-l span{flex:1;text-align:center}
+
+/* user type vs. activity */
+.fit{display:grid;grid-template-columns:1fr 1fr;gap:28px}
+.fit table{width:100%;border-collapse:collapse;font-size:13.5px}
+.fit th{text-align:left;font-weight:600;color:var(--ink2);border-bottom:1px solid var(--line);padding:6px 6px 6px 0;font-size:12.5px}
+.fit td{border-bottom:1px solid #EEF2F6;padding:6px 6px 6px 0;vertical-align:top}
+.fit td.n{text-align:right;white-space:nowrap}
+.fit .scroll{max-height:360px;overflow:auto}
+.fit input{width:44px;border:1px solid var(--line);border-radius:4px;padding:1px 4px;text-align:center}
+.big{font-size:40px;font-weight:700;font-stretch:78%;line-height:1;margin:2px 0 6px}
+.big small{font-size:16px;font-weight:600;font-stretch:100%;color:var(--ink2)}
+/* threshold line: the cutoff is the key fact of each list, so it reads first */
+.thr{display:inline-flex;align-items:center;gap:8px;margin:4px 0 12px;padding:5px 12px;border-radius:8px;
+  background:#EAF0F6;color:var(--ink);font-size:15px;font-weight:600}
+.stepper{display:inline-flex;align-items:stretch;border:1.5px solid var(--ink);border-radius:6px;overflow:hidden;background:#fff}
+.stepper .step{width:26px;border:0;background:#fff;color:var(--ink);font-size:16px;font-weight:700;cursor:pointer;line-height:1}
+.stepper .step:hover{background:#E3EAF2}
+.fit .thr input{width:3.2ch;border:0;border-left:1px solid var(--line);border-right:1px solid var(--line);border-radius:0;
+  padding:2px 0;background:#fff;font-size:16px;font-weight:700;text-align:center;color:var(--ink);
+  -moz-appearance:textfield;appearance:textfield}
+.fit .thr input::-webkit-inner-spin-button,.fit .thr input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+
+/* directory */
+.dir-ctl{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.dir-ctl input[type=search]{flex:1;min-width:240px;border:1px solid var(--line);border-radius:6px;padding:9px 12px;background:#fff}
+.dir-ctl select{border:1px solid var(--line);border-radius:6px;padding:8px 10px;background:#fff}
+.count{color:var(--ink);font-size:18px;font-weight:700;margin:2px 0 12px}
+.user{display:grid;grid-template-columns:44px 1fr;gap:14px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin-bottom:10px}
+.av{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;font-weight:700;color:#fff;font-size:15px}
+.user .nm{font-weight:700;font-size:16px}
+.user .em{color:var(--ink2);font-size:13.5px;margin-bottom:8px}
+.pills{display:flex;flex-wrap:wrap;gap:6px}
+.pill{font-size:12.5px;padding:2px 10px;border-radius:12px;background:#F1F4F8;color:var(--ink);white-space:nowrap}
+.pill.m{background:#E4EEF9;color:#1B4C86}
+.pill.d{background:#E3F3EA;color:#0B6B42}
+.pill.f{border:1px solid var(--line);background:#fff}
+.pill.f.hot{background:var(--h1);border-color:var(--h1)}
+.more{display:block;margin:14px auto 0;border:1px solid var(--ink);background:#fff;border-radius:6px;padding:8px 18px;cursor:pointer}
+.empty{padding:30px;text-align:center;color:var(--ink2);background:#fff;border:1px dashed var(--line);border-radius:10px}
+
+footer{color:var(--mute);font-size:12.5px;padding:40px 0 50px;max-width:90ch}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 18px;border-radius:8px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none}
+.toast.on{opacity:1}
+
+@media (max-width:900px){.grid2,.fit{grid-template-columns:1fr}.ad-row{grid-template-columns:110px 1fr 96px}.wrap{padding:0 18px}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+/* PDF chooser */
+dialog#pdf-dlg{border:0;border-radius:12px;padding:26px 28px 22px;max-width:520px;width:calc(100% - 32px);color:var(--ink);box-shadow:0 18px 50px rgba(18,41,74,.28)}
+dialog#pdf-dlg::backdrop{background:rgba(18,41,74,.45)}
+#pdf-dlg h3{margin:0 0 4px;font-size:20px;font-stretch:85%}
+#pdf-dlg p.s{margin:0 0 16px;color:var(--ink2);font-size:14px}
+#pdf-dlg label{display:flex;gap:10px;align-items:baseline;padding:7px 0;font-size:15px;cursor:pointer}
+#pdf-dlg label small{color:var(--ink2);font-size:13px}
+#pdf-dlg .sub{margin:0 0 4px 26px;padding-left:12px;border-left:2px solid var(--line)}
+#pdf-dlg .sub label{font-size:14px;padding:4px 0}
+#pdf-dlg .sub.off{opacity:.4;pointer-events:none}
+#pdf-dlg .acts{display:flex;justify-content:flex-end;gap:10px;margin-top:18px}
+#pdf-dlg .acts button{border-radius:6px;padding:8px 16px;cursor:pointer;font-size:14px}
+#pdf-dlg .b1{background:var(--ink);color:#fff;border:1px solid var(--ink);font-weight:600}
+#pdf-dlg .b2{background:#fff;border:1px solid var(--line)}
+#pdf-dlg .err{color:var(--down);font-size:13px;margin:8px 0 0;min-height:1em}
+.pnote{display:none}
+.fit th{position:sticky;top:0;background:#fff;z-index:1}
+
+/* Zero page margin stops the browser printing its own header and footer (date, title,
+   file path, page number). The report adds its own spacing on every page below. */
+@page{size:landscape;margin:0}
+@media print{
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .bar .btn,.bar label,.mx-ctl,.dir-ctl,.more,.toast{display:none!important}
+  .noprint{display:none!important}
+  .pnote{display:block;color:var(--ink2);font-size:13px;margin:-12px 0 12px;font-weight:600}
+  body{background:#fff}
+  .wrap{max-width:none;padding:0 4px}
+  .hero{padding-top:20px}
+  section{padding-top:24px}
+  h2,.lede,.pnote{break-after:avoid}
+  .panel,.user,.ad-row,.mx tr,.stat{break-inside:avoid}
+  .matrix-wrap{overflow:visible;border:0;padding:0}
+  table.mx{zoom:.9}
+  .grid2{grid-template-columns:1.55fr 1fr}
+  .fit{grid-template-columns:1fr 1fr}
+  .fit .scroll{max-height:none;overflow:visible}
+  .fit th{position:static}
+  .fit input{border:0;padding:0;width:2.2ch;font-weight:700;-moz-appearance:textfield;appearance:textfield;text-align:center}
+  .fit input::-webkit-inner-spin-button,.fit input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+}
+/* compact print pieces */
+.ptable,.more-row{display:none}
+#pdf-dlg .est{margin:14px 0 0;padding:10px 12px;background:#F1F4F8;border-radius:8px;font-size:14px}
+#pdf-dlg .est b{font-weight:700}
+@media print{
+  #s-matrix,#s-adopt,#s-fit,#s-dir{break-before:page}
+  .first-print{break-before:auto!important}
+  section{padding-top:0} .hero{padding-top:14px}
+  h2{font-size:21px} .lede{margin-bottom:8px;font-size:13px}
+  .pnote{margin:0 0 8px}
+  /* heatmap */
+  table.mx{zoom:1;border-spacing:1.5px}
+  .mx th.col{height:108px}
+  .mx th.col div{font-size:10.5px}
+  .mx td{line-height:1;font-size:10.5px;padding-top:0;padding-bottom:0}
+  .mx td.u{max-width:190px}
+  .mx td.t .chip{font-size:9px;padding:0 5px;line-height:1.3}
+  .mx td.c{height:12px;width:19px;min-width:19px;max-width:19px}
+  .mx thead{display:table-header-group}
+  .legend{margin-top:6px;font-size:11px}
+  /* adoption */
+  .grid2{gap:14px}
+  .grid2>div{gap:14px!important}
+  .panel{padding:12px 14px;border-radius:8px}
+  .panel h3{font-size:14px;margin:0}
+  .panel p.s{margin:0 0 6px;font-size:11.5px}
+  .keys{margin:0 0 4px;font-size:11px}
+  .ad-row{padding:1px 0;font-size:11px;gap:8px;grid-template-columns:130px 1fr auto}
+  .track{height:10px}
+  .ad-row .num{min-width:70px}
+  #donut{width:96px;height:96px}
+  .donut-box{gap:14px} .donut-box li{margin:2px 0;font-size:12px}
+  .hist{height:92px} .hist .col span.v{font-size:10px} .hist-l{font-size:10.5px;margin-top:2px}
+  /* user type vs activity */
+  .big{font-size:26px;margin:0 0 4px}
+  .fit table{table-layout:fixed;font-size:10.5px}
+  .fit th,.fit td{padding:3px 6px 3px 0;white-space:normal;line-height:1.35}
+  .fit td.n,.fit th.n{white-space:nowrap}
+  .fit tr{break-inside:avoid}
+  .fit thead{display:table-header-group}
+  .fit .panel,#s-fit{break-inside:auto}
+  .fit{align-items:start}
+  .fit th:nth-child(1){width:24%} .fit th:nth-child(2){width:53%} .fit th:nth-child(3){width:10%} .fit th:nth-child(4){width:13%}
+  body.fit-short .fit tr.x{display:none}
+  body.fit-short .fit tr.more-row{display:table-row}
+  .more-row td{color:var(--ink2);font-style:italic;border-bottom:0}
+  /* every user: compact table instead of cards */
+  #dir{display:none!important}
+  .ptable{display:table;width:100%;border-collapse:collapse;font-size:10.5px;table-layout:fixed}
+  .ptable thead{display:table-header-group}
+  .ptable th{text-align:left;font-weight:600;color:var(--ink2);border-bottom:1.5px solid var(--ink);padding:4px 8px 4px 0;font-size:10px}
+  .ptable td{border-bottom:1px solid #E6EBF0;padding:3px 8px 3px 0;vertical-align:top;line-height:1.35}
+  .ptable tr{break-inside:avoid}
+  .ptable td.n,.ptable th.n{text-align:right}
+  .ptable td:nth-child(2){overflow-wrap:anywhere}
+  .ptable .chip{font-size:9px;padding:0 5px}
+  .count{font-size:15px;font-weight:700;color:var(--ink);margin:2px 0 8px}
+}
+@media print{
+  body{background:#fff}
+  .bar .wrap{padding:8px 12mm}
+  main.wrap{padding:0 12mm}
+  .hero,section{padding-top:10mm!important;padding-bottom:8mm;
+    -webkit-box-decoration-break:clone;box-decoration-break:clone}
+  footer{padding:0 0 10mm}
+  .thr{font-size:14px;padding:4px 10px;margin:4px 0 8px}
+  .stepper{border:0;background:transparent} .stepper .step{display:none}
+  .fit .thr input{border:0;background:transparent;padding:0;width:2.4ch;font-size:15px}
+  .big small{font-size:12px}
+}
+</style>
+</head>
+<body>
+<header class="bar"><div class="wrap">
+  <div class="mark">Acme <small>New Relic usage report</small></div>
+  <div class="sp"></div>
+  <label class="btn" for="f-cur" title="Replace the data with a new MEGA export">Load this month's CSV</label>
+  <input type="file" id="f-cur" accept=".csv">
+  <label class="btn" for="f-prev" title="Add last month's export to show changes">Compare with last month</label>
+  <input type="file" id="f-prev" accept=".csv">
+  <button class="btn" id="b-print">Save as PDF</button>
+  <button class="btn" id="b-nr" title="Download this month's data in the format for a New Relic lookup table">Export for New Relic</button>
+  <button class="btn solid" id="b-save">Save report file</button>
+</div></header>
+
+<main class="wrap">
+  <div class="hero" id="s-summary">
+    <p class="period" id="period"></p>
+    <h1 id="headline"></h1>
+    <div class="stats" id="stats"></div>
+  </div>
+
+  <section id="s-matrix">
+    <h2>Who uses what</h2>
+    <p class="lede">Each row is a person, each column a part of New Relic. Darker green means more page views in that area during the period.</p>
+    <p class="pnote" id="mx-note"></p>
+    <div class="mx-ctl">
+      <span>Show</span>
+      <div class="seg" id="mx-n">
+        <button data-n="25">Top 25</button><button data-n="50" aria-pressed="true">Top 50</button><button data-n="100">Top 100</button>
+      </div>
+      <span>by page views, from</span>
+      <div class="seg" id="mx-t">
+        <button data-t="ALL" aria-pressed="true">Everyone</button><button data-t="FULL">FULL</button><button data-t="BASIC">BASIC</button>
+      </div>
+    </div>
+    <div class="matrix-wrap"><table class="mx" id="mx"></table>
+      <div class="legend">Page views <span class="ramp"><i style="background:#F3F6F9"></i><i style="background:var(--h1)"></i><i style="background:var(--h2)"></i><i style="background:var(--h3)"></i><i style="background:var(--h4)"></i><i style="background:var(--h5)"></i></span> none → 500+ <span style="margin-left:14px">Hover a cell for the exact count.</span></div>
+    </div>
+  </section>
+
+  <section id="s-adopt">
+    <h2>Feature adoption</h2>
+    <p class="lede" id="adopt-lede"></p>
+    <div class="grid2">
+      <div class="panel">
+        <h3>People using each feature</h3>
+        <p class="s">Bar length is the share of all tracked users, split by user type.</p>
+        <div class="keys"><span><i style="background:var(--full)"></i>FULL</span><span><i style="background:var(--basic)"></i>BASIC</span><span><i style="background:var(--core)"></i>CORE</span><span id="tick-key" hidden><i style="background:var(--tick);width:3px"></i>Last month</span></div>
+        <div id="adopt"></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:28px">
+        <div class="panel">
+          <h3>User types</h3>
+          <p class="s">How Acme's tracked users are licensed.</p>
+          <div class="donut-box"><svg id="donut" width="150" height="150" viewBox="0 0 42 42" role="img" aria-label="User type mix"></svg><ul id="donut-l"></ul></div>
+        </div>
+        <div class="panel">
+          <h3>How often people log in</h3>
+          <p class="s">Number of users by days active in the period.</p>
+          <div class="hist" id="hist"></div><div class="hist-l" id="hist-l"></div>
+        </div>
+        <div class="panel">
+          <h3>Most-used accounts</h3>
+          <p class="s">The account each person was last working in.</p>
+          <div id="accts"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="s-fit">
+    <h2>User type vs. activity</h2>
+    <p class="lede">Two lists worth reviewing together: FULL users who barely logged in, and BASIC users who log in often. Activity alone doesn't decide someone's user type, so treat these as a starting point for review.</p>
+    <div class="fit">
+      <div class="panel">
+        <h3>FULL users with light activity</h3>
+        <p class="thr"><label for="th-full">Active for</label> <span class="stepper"><button type="button" class="step" data-for="th-full" data-d="-1" aria-label="One day fewer">−</button><input id="th-full" type="number" min="1" max="31" value="2"><button type="button" class="step" data-for="th-full" data-d="1" aria-label="One day more">+</button></span> <span>days or less</span></p>
+        <div class="big"><span id="fit-full-n"></span> <small>people</small></div>
+        <div class="scroll"><table id="fit-full"></table></div>
+      </div>
+      <div class="panel">
+        <h3>BASIC users with heavy activity</h3>
+        <p class="thr"><label for="th-basic">Active for</label> <span class="stepper"><button type="button" class="step" data-for="th-basic" data-d="-1" aria-label="One day fewer">−</button><input id="th-basic" type="number" min="1" max="31" value="10"><button type="button" class="step" data-for="th-basic" data-d="1" aria-label="One day more">+</button></span> <span>days or more</span></p>
+        <div class="big"><span id="fit-basic-n"></span> <small>people</small></div>
+        <div class="scroll"><table id="fit-basic"></table></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="s-dir">
+    <h2>Every user</h2>
+    <p class="lede">The full list, with every feature each person opened and how many page views they spent there.</p>
+    <div class="dir-ctl">
+      <input type="search" id="q" placeholder="Search by name or email" aria-label="Search users">
+      <select id="ft" aria-label="User type"><option value="">All user types</option><option>FULL</option><option>BASIC</option><option>CORE</option></select>
+      <select id="ff" aria-label="Feature"><option value="">Any feature</option></select>
+      <select id="fs" aria-label="Sort"><option value="v">Sort by page views</option><option value="d">Sort by days active</option><option value="n">Sort by features used</option><option value="r">Sort by last active</option></select>
+    </div>
+    <p class="pnote" id="dir-note"></p>
+    <p class="count" id="count"></p>
+    <div id="dir"></div>
+    <table class="ptable" id="dir-print"></table>
+    <button class="more" id="more">Show 30 more</button>
+  </section>
+
+  <footer id="foot"></footer>
+</main>
+<div class="toast" id="toast" role="status"></div>
+<dialog id="pdf-dlg" aria-labelledby="pdf-h">
+  <form method="dialog">
+    <h3 id="pdf-h">Choose what goes in the PDF</h3>
+    <p class="s">Each section starts on a new page and uses your current selections. The user list prints as a compact table.</p>
+    <label><input type="checkbox" data-sec="s-summary" checked> Summary and headline numbers</label>
+    <label><input type="checkbox" data-sec="s-matrix" checked> Who uses what <small id="o-mx"></small></label>
+    <label><input type="checkbox" data-sec="s-adopt" checked> Feature adoption</label>
+    <label><input type="checkbox" data-sec="s-fit" id="c-fit" checked> User type vs. activity <small id="o-fit"></small></label>
+    <div class="sub" id="o-fitmode">
+      <label><input type="radio" name="fitmode" value="short" checked><span>Top 20 from each list</span></label>
+      <label><input type="radio" name="fitmode" value="full"><span>Full lists (<span id="o-fitn"></span> people)</span></label>
+    </div>
+    <label><input type="checkbox" data-sec="s-dir" id="c-dir" checked> Every user</label>
+    <div class="sub" id="o-dir">
+      <label><input type="radio" name="dirmode" value="shown" checked><span>The <span id="o-shown"></span> users showing on the page</span></label>
+      <label data-n="100"><input type="radio" name="dirmode" value="100"><span>Top 100 <span class="o-sort"></span></span></label>
+      <label data-n="150"><input type="radio" name="dirmode" value="150"><span>Top 150 <span class="o-sort"></span></span></label>
+      <label><input type="radio" name="dirmode" value="all"><span>All <span id="o-all"></span> users<span id="o-filt"></span></span></label>
+    </div>
+    <p class="est" id="pdf-est"></p>
+    <p class="err" id="pdf-err"></p>
+    <div class="acts"><button value="cancel" class="b2" formnovalidate>Cancel</button><button value="ok" class="b1" id="pdf-go">Save as PDF</button></div>
+  </form>
+</dialog>
+
+<script type="application/json" id="report-config">{"customer": "Acme", "slug": "Acme", "table": "AcmeUserFeatureUsage", "fullLightDays": 2, "basicHeavyDays": 10}</script>
+<script type="text/plain" id="csv-current">Email,Total Page Views,NRQLs Executed,Latest Account,Last Active,User Type,Days Active,Alerts,APM,Apps,Dashboards,Logs,Data Ingestion,Data Explorer - UQE,AI/MLOps,Deployments,All Capabilities,Fleet/Pipelines,Scorecards,Recommendations,Plan Management,Help,Browser,Errors Inbox,Infra,K8s,Mobile,NPM,Service Levels,Synthetics,Traces,VM/IAST,Workloads,WPM,Admin
+Noah_Kim32@example.com,1080,31,1000001,"October 30, 2026",BASIC,26,176,0,296,128,192,0,72,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,216,0,0,0,0
+Aisha_Shah@example.com,834,9,cross-account,"October 22, 2026",FULL,18,192,0,0,186,186,0,138,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,132,0,0,0,0,0
+Liam_Webb30@example.com,756,41,1000001,"November 5, 2026",FULL,18,126,144,0,108,0,0,60,0,0,0,0,0,0,0,0,162,0,0,0,0,0,0,156,0,0,0,0,0
+Liam_Webb@example.com,738,39,1000001,"October 8, 2026",BASIC,18,156,30,0,156,0,0,156,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,234,6,0,0,0,0
+Carlos_Diaz@example.com,654,45,cross-account,"October 19, 2026",BASIC,18,24,114,0,240,96,0,180,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+Zara_Okafor37@example.com,595,39,1000002,"October 25, 2026",BASIC,22,133,0,91,182,0,0,189,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+Mei_Dubois27@example.com,498,4,1000001,"October 12, 2026",FULL,9,24,0,0,90,0,0,102,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,93,90,0,0,0,99
+mei.chen@example.com,480,18,1000002,"October 26, 2026",FULL,18,138,0,0,126,0,0,216,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+Alex_Rivera24@example.com,384,35,1000002,"October 18, 2026",BASIC,12,0,0,0,0,152,0,136,0,0,0,0,0,0,0,0,0,0,0,0,96,0,0,0,0,0,0,0,0
+Aisha_Shah31@example.com,357,28,1000001,"October 21, 2026",BASIC,9,57,51,0,93,48,0,108,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+Kenji_Sato36@example.com,336,14,cross-account,"October 19, 2026",FULL,9,48,0,0,48,81,0,63,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,96,0,0,0,0
+Diego_Lopez@example.com,302,7,1000001,"October 15, 2026",BASIC,7,56,0,42,30,54,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,48,72,0,0,0,0
+Jordan_Haddad@example.com,255,26,1000002,"October 10, 2026",BASIC,9,0,111,0,0,96,0,48,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+Ravi_Silva@example.com,255,29,1000002,"November 1, 2026",FULL,9,0,69,24,120,0,0,42,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+Tomas_Iyer@example.com,231,5,1000001,"October 13, 2026",FULL,9,66,0,60,51,0,0,54,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+Lena_Rossi39@example.com,204,22,1000002,"October 12, 2026",FULL,18,150,0,0,18,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,36,0,0,0,0,0
+Emma_Khan35@example.com,200,34,1000001,"November 1, 2026",FULL,15,0,0,0,100,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,100,0,0,0,0
+Chloe_Chen@example.com,176,44,1000001,"October 15, 2026",BASIC,7,0,18,0,28,46,0,0,0,0,0,0,0,0,0,0,0,0,50,0,0,0,0,0,34,0,0,0,0
+Alex_Rivera@example.com,159,3,1000002,"November 5, 2026",FULL,2,38,33,0,35,6,0,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,6,0,0,0,0,37
+Zara_Okafor@example.com,156,15,1000001,"October 9, 2026",FULL,12,0,0,0,0,40,0,116,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+Fatima_Novak@example.com,136,57,1000002,"November 1, 2026",BASIC,5,12,15,19,0,38,0,25,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,27,0,0,0,0,0
+Ines_Mori@example.com,128,46,1000002,"October 7, 2026",FULL,1,15,34,39,2,0,0,38,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+Sofia_Berg33@example.com,115,4,1000001,"October 21, 2026",FULL,5,16,29,0,14,20,0,33,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,0,0,0,0
+Priya_Bello@example.com,109,29,cross-account,"October 30, 2026",BASIC,1,37,12,0,10,37,0,9,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,4
+Kenji_Sato@example.com,102,34,1000001,"October 22, 2026",BASIC,3,16,0,0,14,35,0,14,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,23,0,0,0,0,0
+Sofia_Berg@example.com,98,14,1000001,"October 17, 2026",CORE,7,4,0,0,64,0,0,30,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+Emma_Khan@example.com,95,27,1000001,"October 22, 2026",BASIC,1,38,0,39,0,0,0,11,0,0,0,0,0,0,0,0,7,0,0,0,0,0,0,0,0,0,0,0,0
+Carlos_Diaz28@example.com,90,24,cross-account,"October 19, 2026",BASIC,2,33,8,32,0,0,0,17,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+Fatima_Novak29@example.com,84,6,cross-account,"October 7, 2026",FULL,5,13,0,24,0,0,0,22,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,25,0,0,0,0,0
+Nia_Ali@example.com,78,59,1000001,"October 11, 2026",FULL,1,8,22,0,15,0,0,17,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,16
+Omar_Lee@example.com,75,59,cross-account,"October 13, 2026",FULL,1,0,0,0,2,40,0,33,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+Marcus_Murphy@example.com,72,57,1000002,"October 11, 2026",FULL,26,0,0,0,0,0,0,72,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+Priya_Bello25@example.com,70,54,1000002,"November 4, 2026",FULL,1,5,0,0,1,0,0,16,0,0,0,0,0,0,0,0,0,0,17,0,0,0,0,0,31,0,0,0,0
+Ravi_Silva34@example.com,68,50,1000001,"October 7, 2026",FULL,12,28,40,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+Lena_Rossi@example.com,54,47,1000001,"November 4, 2026",BASIC,3,5,0,0,26,14,0,9,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+Arjun_Nair@example.com,51,34,1000002,"November 4, 2026",FULL,4,0,2,2,33,0,0,14,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+Noah_Kim@example.com,44,51,1000001,"October 30, 2026",BASIC,1,0,0,0,0,24,0,20,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+Jordan_Haddad26@example.com,39,44,1000001,"October 27, 2026",FULL,9,0,0,0,9,30,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+Omar_Lee38@example.com,36,21,1000001,"October 8, 2026",FULL,3,26,2,4,0,0,0,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+Hana_Costa@example.com,4,16,1000001,"October 9, 2026",BASIC,26,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+</script>
+<script type="text/plain" id="csv-previous">__CSV_PREVIOUS__</script>
+<script>
+(function(){
+const TEMPLATE = '<!doctype html>\n' + document.documentElement.outerHTML;
+const CFG = Object.assign({customer:'Customer', slug:'Customer', table:'CustomerUserFeatureUsage'}, JSON.parse(document.getElementById('report-config').textContent||'{}'));
+const META = ['Email','Total Page Views','NRQLs Executed','Latest Account','Last Active','User Type','Days Active'];
+const $ = s => document.querySelector(s);
+const fmt = n => n.toLocaleString('en-US');
+const pct = (a,b) => b ? Math.round(a/b*100) : 0;
+const pctS = (a,b) => { const p=b?a/b*100:0; return p>0&&p<1 ? '<1' : String(Math.round(p)); };
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+function parseCSV(text){
+  const rows=[]; let row=[], f='', q=false;
+  for(let i=0;i<text.length;i++){
+    const c=text[i];
+    if(q){ if(c==='"'){ if(text[i+1]==='"'){f+='"';i++;} else q=false; } else f+=c; }
+    else if(c==='"') q=true;
+    else if(c===','){ row.push(f); f=''; }
+    else if(c==='\n'||c==='\r'){ if(c==='\r'&&text[i+1]==='\n') i++; row.push(f); f=''; if(row.length>1||row[0]!=='') rows.push(row); row=[]; }
+    else f+=c;
+  }
+  if(f!==''||row.length){ row.push(f); rows.push(row); }
+  return rows;
+}
+function load(text){
+  text = (text||'').trim();
+  if(!text || text.startsWith('__CSV')) return null;
+  const rows = parseCSV(text); const head = rows[0].map(h=>h.trim());
+  if(!head.includes('Email')) throw new Error('This file has no "Email" column. Export the user activity CSV from MEGA and try again.');
+  const feats = head.filter(h=>!META.includes(h));
+  const users = rows.slice(1).filter(r=>r[head.indexOf('Email')]).map(r=>{
+    const o={}; head.forEach((h,i)=>o[h]=r[i]);
+    const email=o['Email'].trim();
+    const f={}; feats.forEach(k=>{const v=+o[k]||0; if(v>0) f[k]=v;});
+    return { email, name: nameOf(email), type:(o['User Type']||'').trim().toUpperCase()||'UNKNOWN',
+      views:+o['Total Page Views']||0, nrql:+o['NRQLs Executed']||0, days:+o['Days Active']||0,
+      acct:(o['Latest Account']||'').trim(), last:new Date(o['Last Active']), f, nf:Object.keys(f).length };
+  });
+  return { feats, users };
+}
+function nameOf(e){
+  return e.split('@')[0].split(/[._]+/).filter(Boolean).map(w=>w[0].toUpperCase()+w.slice(1).toLowerCase()).join(' ');
+}
+const PALETTE=['#12294A','#1B5E8A','#0B7A4B','#7A4FA0','#B5502F','#2E7D86','#8A6D1E','#4A5A9C'];
+const avColor = e => PALETTE[[...e].reduce((a,c)=>a+c.charCodeAt(0),0)%PALETTE.length];
+const lvl = v => !v?0: v<5?1: v<25?2: v<100?3: v<500?4:5;
+
+let CUR, PREV, mxN=50, mxT='ALL', shown=30, lastMatch=0, fitCounts=[0,0];
+const FIT_SHORT=20;
+
+function render(){
+  const U=CUR.users, N=U.length;
+  // features ordered by adoption
+  const adopt = CUR.feats.map(k=>{
+    const us=U.filter(u=>u.f[k]);
+    return {k, n:us.length, FULL:us.filter(u=>u.type==='FULL').length, BASIC:us.filter(u=>u.type==='BASIC').length,
+      CORE:us.filter(u=>u.type==='CORE').length, views:us.reduce((a,u)=>a+u.f[k],0)};
+  }).filter(a=>a.n>0).sort((a,b)=>b.n-a.n);
+  const F = adopt.map(a=>a.k);
+  const dates = U.map(u=>u.last).filter(d=>!isNaN(d));
+  const dmax = new Date(Math.max(...dates)), dmin=new Date(Math.min(...dates));
+  const dfmt = d => d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+  const byType = t => U.filter(u=>u.type===t).length;
+  const views = U.reduce((a,u)=>a+u.views,0);
+  const avgDays = U.reduce((a,u)=>a+u.days,0)/N;
+
+  $('#period').textContent = `Activity from ${dfmt(dmin)} to ${dfmt(dmax)}`;
+  const top=adopt[0], apm=adopt.find(a=>a.k==='APM');
+  $('#headline').textContent = `${fmt(N)} people at ${CFG.customer} used New Relic this period. ${pct(top.n,N)}% of them used ${top.k.replace(' - UQE','')}${apm&&apm!==top?`, and ${pct(apm.n,N)}% opened APM`:''}.`;
+
+  // stats with deltas
+  const P = PREV && PREV.users, PN = P && P.length;
+  const pv = P ? { N:PN, FULL:P.filter(u=>u.type==='FULL').length, BASIC:P.filter(u=>u.type==='BASIC').length,
+    views:P.reduce((a,u)=>a+u.views,0), days:P.reduce((a,u)=>a+u.days,0)/PN, nf:P.reduce((a,u)=>a+u.nf,0)/PN } : null;
+  const dl = (c,p,dec) => { if(p==null) return ''; const d=c-p; const cls=d>0?'up':d<0?'down':'flat';
+    const s = dec? (d>0?'+':'')+d.toFixed(1) : (d>0?'+':'')+fmt(Math.round(d)); return `<span class="delta ${cls}">${d===0?'no change':s}</span>`; };
+  const avgF = U.reduce((a,u)=>a+u.nf,0)/N;
+  const S=[
+    [fmt(N),'tracked users',dl(N,pv&&pv.N)],
+    [fmt(byType('FULL')),'FULL users',dl(byType('FULL'),pv&&pv.FULL)],
+    [fmt(byType('BASIC')),'BASIC users',dl(byType('BASIC'),pv&&pv.BASIC)],
+    [fmt(views),'page views',dl(views,pv&&pv.views)],
+    [avgDays.toFixed(1),'average days active',dl(avgDays,pv&&pv.days,1)],
+    [avgF.toFixed(1),'features per person',dl(avgF,pv&&pv.nf,1)],
+  ];
+  if(P){ const pe=new Set(P.map(u=>u.email.toLowerCase())), ce=new Set(U.map(u=>u.email.toLowerCase()));
+    S.push([fmt(U.filter(u=>!pe.has(u.email.toLowerCase())).length),'new since last month','']);
+    S.push([fmt(P.filter(u=>!ce.has(u.email.toLowerCase())).length),'not seen this month','']); }
+  $('#stats').innerHTML = S.map(s=>`<div class="stat"><b>${s[0]}${s[2]}</b><span>${s[1]}</span></div>`).join('');
+
+  // matrix
+  const pool = U.filter(u=>mxT==='ALL'||u.type===mxT).sort((a,b)=>b.views-a.views).slice(0,mxN);
+  let h = '<thead><tr><th></th><th></th>'+F.map(k=>`<th class="col"><div>${esc(k)}</div></th>`).join('')+'</tr></thead><tbody>';
+  h += pool.map(u=>`<tr><td class="u" title="${esc(u.email)}">${esc(u.name)}</td><td class="t"><span class="chip ${u.type}">${u.type}</span></td>`+
+    F.map(k=>`<td class="c" data-l="${lvl(u.f[k])}" title="${esc(u.name)} – ${esc(k)}: ${fmt(u.f[k]||0)} page views"></td>`).join('')+'</tr>').join('');
+  $('#mx').innerHTML = h+'</tbody>';
+  $('#mx-note').textContent = `Top ${pool.length} users by page views${mxT==='ALL'?', all user types':`, ${mxT} users only`}.`;
+
+  // adoption bars
+  const prevAdopt = P ? Object.fromEntries(PREV.feats.map(k=>[k,P.filter(u=>u.f[k]).length])) : null;
+  $('#tick-key').hidden = !P;
+  $('#adopt').innerHTML = adopt.map(a=>{
+    const w=t=>(a[t]/N*100).toFixed(2)+'%';
+    let tick='', d='';
+    if(prevAdopt && prevAdopt[a.k]!=null){ tick=`<span class="tick" style="left:${(prevAdopt[a.k]/PN*100).toFixed(2)}%"></span>`;
+      const dd=pct(a.n,N)-pct(prevAdopt[a.k],PN); d=` <span class="delta ${dd>0?'up':dd<0?'down':'flat'}">${dd>0?'+':''}${dd} pts</span>`; if(dd===0) d=''; }
+    return `<div class="ad-row" title="${esc(a.k)}: ${a.FULL} FULL, ${a.BASIC} BASIC, ${a.CORE} CORE; ${fmt(a.views)} page views">
+      <div class="lab">${esc(a.k)}</div>
+      <div class="track"><i style="width:${w('FULL')};background:var(--full)"></i><i style="width:${w('BASIC')};background:var(--basic)"></i><i style="width:${w('CORE')};background:var(--core)"></i>${tick}</div>
+      <div class="num"><b>${fmt(a.n)}</b> (${pctS(a.n,N)}%)${d}</div></div>`;
+  }).join('');
+  const unused = CUR.feats.filter(k=>!F.includes(k));
+  const fullOnly = adopt.slice().sort((a,b)=>(b.FULL/Math.max(1,byType('FULL')))-(a.FULL/Math.max(1,byType('FULL'))));
+  $('#adopt-lede').textContent = `${(n=>n.slice(0,-1).join(', ')+' and '+n[n.length-1])(adopt.slice(0,3).map(a=>a.k.replace(' - UQE','')))} are the most widely used. ${adopt.filter(a=>a.n/N<0.05).length} features are used by fewer than 5% of people${unused.length?`, and ${unused.join(', ')} had no activity at all`:''}.`;
+
+  // donut
+  const types=[['FULL','var(--full)'],['BASIC','var(--basic)'],['CORE','var(--core)']];
+  let off=25, svg='<circle cx="21" cy="21" r="15.9" fill="none" stroke="#EEF2F6" stroke-width="6"/>';
+  types.forEach(([t,c])=>{ const p=byType(t)/N*100; if(!p) return;
+    svg+=`<circle cx="21" cy="21" r="15.9" fill="none" stroke="${c}" stroke-width="6" stroke-dasharray="${p} ${100-p}" stroke-dashoffset="${off}"/>`; off=(off-p+100)%100; });
+  svg+=`<text x="21" y="21" text-anchor="middle" font-size="7" font-weight="700" fill="#12294A" font-family="Archivo,Arial">${fmt(N)}</text><text x="21" y="27" text-anchor="middle" font-size="3" fill="#41546E" font-family="Archivo,Arial">users</text>`;
+  $('#donut').innerHTML=svg;
+  $('#donut-l').innerHTML = types.filter(([t])=>byType(t)).map(([t,c])=>`<li><i style="display:inline-block;width:11px;height:11px;border-radius:2px;background:${c};margin-right:8px"></i><b>${fmt(byType(t))}</b>${t} (${pctS(byType(t),N)}%)</li>`).join('');
+
+  // histogram
+  const B=[[1,1,'1 day'],[2,4,'2–4'],[5,9,'5–9'],[10,14,'10–14'],[15,19,'15–19'],[20,99,'20+']];
+  const cnt=B.map(([a,b])=>{const us=U.filter(u=>u.days>=a&&u.days<=b); return {n:us.length,FULL:us.filter(u=>u.type==='FULL').length,BASIC:us.filter(u=>u.type==='BASIC').length,CORE:us.filter(u=>u.type==='CORE').length};});
+  const mx=Math.max(...cnt.map(c=>c.n));
+  $('#hist').innerHTML = cnt.map(c=>`<div class="col" title="${c.FULL} FULL, ${c.BASIC} BASIC">`+
+    ['FULL','BASIC','CORE'].map(t=>`<i style="height:${(c[t]/mx*88).toFixed(1)}%;background:var(--${t.toLowerCase()})"></i>`).join('')+
+    `<span class="v" style="bottom:calc(${(c.n/mx*88).toFixed(1)}% + 2px)">${c.n}</span></div>`).join('');
+  $('#hist-l').innerHTML = B.map(b=>`<span>${b[2]}</span>`).join('');
+
+  // accounts
+  const ac={}; U.forEach(u=>ac[u.acct]=(ac[u.acct]||0)+1);
+  const acs=Object.entries(ac).sort((a,b)=>b[1]-a[1]).slice(0,6);
+  $('#accts').innerHTML = acs.map(([a,n])=>`<div class="ad-row" style="grid-template-columns:110px 1fr 80px"><div class="lab">${a==='cross-account'?'Cross-account':esc(a)}</div><div class="track"><i style="width:${(n/N*100).toFixed(1)}%;background:var(--ink2)"></i></div><div class="num"><b>${n}</b> (${pctS(n,N)}%)</div></div>`).join('');
+
+  renderFit(); fillFeatureFilter(F); renderDir(F);
+
+  $('#foot').innerHTML = `Source: New Relic user activity export for ${esc(CFG.customer)} (MEGA), ${fmt(N)} users${P?`, compared with a previous export of ${fmt(PN)} users`:''}. Counts are page views by product area and reflect what people used, not what their license allows. Report generated ${dfmt(new Date())}.`;
+}
+
+function topFeats(u,n){ return Object.entries(u.f).sort((a,b)=>b[1]-a[1]).slice(0,n).map(([k,v])=>`${k} (${fmt(v)})`).join(', '); }
+function renderFit(){
+  const U=CUR.users, tf=+$('#th-full').value||2, tb=+$('#th-basic').value||10;
+  const lf=U.filter(u=>u.type==='FULL'&&u.days<=tf).sort((a,b)=>a.days-b.days||a.views-b.views);
+  const hb=U.filter(u=>u.type==='BASIC'&&u.days>=tb).sort((a,b)=>b.days-a.days||b.views-a.views);
+  $('#fit-full-n').textContent=fmt(lf.length); $('#fit-basic-n').textContent=fmt(hb.length);
+  fitCounts=[lf.length,hb.length];
+  const tbl=(L)=>'<thead><tr><th>User</th><th>Features used (page views)</th><th class="n">Days</th><th class="n">Views</th></tr></thead><tbody>'+
+    L.map((u,i)=>`<tr${i>=FIT_SHORT?' class="x"':''}><td title="${esc(u.email)}">${esc(u.name)}</td><td>${esc(topFeats(u,99))||'–'}</td><td class="n">${u.days}</td><td class="n">${fmt(u.views)}</td></tr>`).join('')+
+    (L.length>FIT_SHORT?`<tr class="more-row"><td colspan="4">+ ${fmt(L.length-FIT_SHORT)} more not shown</td></tr>`:'')+'</tbody>';
+  $('#fit-full').innerHTML=tbl(lf); $('#fit-basic').innerHTML=tbl(hb);
+}
+function fillFeatureFilter(F){
+  const sel=$('#ff'), v=sel.value;
+  sel.innerHTML='<option value="">Any feature</option>'+F.map(k=>`<option>${esc(k)}</option>`).join(''); sel.value=v;
+}
+function renderDir(){
+  const q=$('#q').value.trim().toLowerCase(), t=$('#ft').value, ff=$('#ff').value, s=$('#fs').value;
+  let L=CUR.users.filter(u=>(!q||u.email.toLowerCase().includes(q)||u.name.toLowerCase().includes(q))&&(!t||u.type===t)&&(!ff||u.f[ff]));
+  const key={v:u=>u.views,d:u=>u.days,n:u=>u.nf,r:u=>+u.last||0}[s];
+  L.sort((a,b)=>key(b)-key(a));
+  lastMatch=L.length;
+  const parts=[]; if(t) parts.push(`${t} users`); if(ff) parts.push(`people using ${ff}`); if(q) parts.push(`matching "${q}"`);
+  const sl={v:'page views',d:'days active',n:'features used',r:'last active'}[s];
+  $('#dir-note').textContent=`${parts.length?'Filtered to '+parts.join(', ')+'. ':'All user types and features. '}Sorted by ${sl}.`;
+  const nShow=Math.min(shown,L.length);
+  $('#count').textContent = nShow<L.length ? `Showing the top ${fmt(nShow)} of ${fmt(L.length)} users by ${sl}` : `Showing all ${fmt(L.length)} users`;
+  $('#dir').innerHTML = L.length ? L.slice(0,shown).map(u=>{
+    const ini=u.name.split(' ').map(w=>w[0]).slice(0,2).join('');
+    const fp=Object.entries(u.f).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<span class="pill f${v>=100?' hot':''}">${esc(k)} (${fmt(v)})</span>`).join('');
+    return `<article class="user"><div class="av" style="background:${avColor(u.email)}">${esc(ini)}</div><div>
+      <div class="nm">${esc(u.name)}</div><div class="em">${esc(u.email)}</div>
+      <div class="pills"><span class="pill m">Views: ${fmt(u.views)}</span><span class="pill d">Days: ${u.days}</span><span class="chip ${u.type}" style="padding:2px 10px;font-size:12.5px">${u.type}</span>${fp}</div></div></article>`;
+  }).join('') : '<div class="empty">No users match these filters. Clear the search or pick a different feature.</div>';
+  $('#more').hidden = shown>=L.length;
+  $('#dir-print').innerHTML = '<colgroup><col style="width:15%"><col style="width:23%"><col style="width:6%"><col style="width:5%"><col style="width:6%"><col></colgroup>'+
+    '<thead><tr><th>User</th><th>Email</th><th>Type</th><th class="n">Days</th><th class="n">Views</th><th>Features used (page views)</th></tr></thead><tbody>'+
+    L.slice(0,shown).map(u=>`<tr><td>${esc(u.name)}</td><td>${esc(u.email)}</td><td><span class="chip ${u.type}">${u.type}</span></td><td class="n">${u.days}</td><td class="n">${fmt(u.views)}</td><td>${esc(Object.entries(u.f).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`${k} ${fmt(v)}`).join(', '))}</td></tr>`).join('')+'</tbody>';
+}
+
+function toast(m){ const t=$('#toast'); t.textContent=m; t.classList.add('on'); clearTimeout(toast.h); toast.h=setTimeout(()=>t.classList.remove('on'),3500); }
+function readFile(input,cb){ const f=input.files[0]; if(!f) return; const r=new FileReader(); r.onload=()=>{ try{cb(r.result,f.name);}catch(e){toast(e.message);} input.value=''; }; r.readAsText(f); }
+
+let rawCur = document.getElementById('csv-current').textContent, rawPrev = document.getElementById('csv-previous').textContent;
+$('#f-cur').addEventListener('change',e=>readFile(e.target,(t,n)=>{ const d=load(t); if(!d) throw new Error('That file is empty.'); CUR=d; rawCur=t; shown=30; render(); toast(`Loaded ${n}: ${fmt(d.users.length)} users`); }));
+$('#f-prev').addEventListener('change',e=>readFile(e.target,(t,n)=>{ const d=load(t); if(!d) throw new Error('That file is empty.'); PREV=d; rawPrev=t; render(); toast(`Comparing with ${n}`); }));
+const dlg=$('#pdf-dlg');
+$('#b-print').addEventListener('click',()=>{
+  $('#o-mx').textContent=`(top ${mxN}, ${mxT==='ALL'?'everyone':mxT+' only'})`;
+  $('#o-fit').textContent=`(FULL ≤ ${$('#th-full').value} days, BASIC ≥ ${$('#th-basic').value} days)`;
+  $('#o-shown').textContent=fmt(Math.min(shown,lastMatch)); $('#o-all').textContent=fmt(lastMatch);
+  const sl={v:'page views',d:'days active',n:'features used',r:'last active'}[$('#fs').value];
+  dlg.querySelectorAll('.o-sort').forEach(s=>s.textContent=`by ${sl}`);
+  const filtered=$('#q').value.trim()||$('#ft').value||$('#ff').value;
+  $('#o-filt').textContent=filtered?' that match your search and filters':'';
+  dlg.querySelectorAll('label[data-n]').forEach(l=>{ const hide=+l.dataset.n>=lastMatch||+l.dataset.n===Math.min(shown,lastMatch);
+    l.hidden=hide; if(hide&&l.querySelector('input').checked) dlg.querySelector('input[name=dirmode][value=shown]').checked=true; });
+  $('#o-fitn').textContent=fmt(fitCounts[0]+fitCounts[1]);
+  $('#pdf-err').textContent=''; estimate(); dlg.showModal();
+});
+function dirCount(){
+  const v=dlg.querySelector('input[name=dirmode]:checked').value;
+  return v==='all'?lastMatch : v==='shown'?Math.min(shown,lastMatch) : Math.min(+v,lastMatch);
+}
+function estimate(){
+  const on=id=>dlg.querySelector(`[data-sec="${id}"]`).checked;
+  const nDir=dirCount();
+  const fitFull=dlg.querySelector('input[name=fitmode]:checked').value==='full';
+  const rows=Math.min(mxN,CUR.users.filter(u=>mxT==='ALL'||u.type===mxT).length);
+  const fitRows=fitFull?Math.max(...fitCounts):Math.min(FIT_SHORT,Math.max(...fitCounts));
+  let p=0;
+  if(on('s-summary')) p+=1;
+  if(on('s-matrix')) p+= rows<=38?1:1+Math.ceil((rows-38)/44);
+  if(on('s-adopt')) p+=1;
+  if(on('s-fit')) p+= fitRows<=20?1:1+Math.ceil((fitRows-20)/26);
+  if(on('s-dir')) p+= Math.max(1,Math.ceil((nDir+4)/28));
+  $('#pdf-est').innerHTML = p ? `About <b>${p} page${p>1?'s':''}</b>.${on('s-dir')&&nDir>150?' Most of that is the user list. For sharing the full list, the Excel file may work better.':''}` : 'Nothing selected yet.';
+}
+dlg.addEventListener('change',estimate);
+$('#c-dir').addEventListener('change',e=>$('#o-dir').classList.toggle('off',!e.target.checked));
+$('#c-fit').addEventListener('change',e=>$('#o-fitmode').classList.toggle('off',!e.target.checked));
+$('#pdf-go').addEventListener('click',e=>{
+  if(![...dlg.querySelectorAll('[data-sec]')].some(c=>c.checked)){ e.preventDefault(); $('#pdf-err').textContent='Pick at least one section to include.'; }
+});
+dlg.addEventListener('close',()=>{
+  if(dlg.returnValue!=='ok') return;
+  const secs=[...dlg.querySelectorAll('[data-sec]')];
+  secs.forEach(c=>{ const el=document.getElementById(c.dataset.sec); el.classList.toggle('noprint',!c.checked); el.classList.remove('first-print'); });
+  const first=secs.find(c=>c.checked); if(first) document.getElementById(first.dataset.sec).classList.add('first-print');
+  document.body.classList.toggle('fit-short', dlg.querySelector('input[name=fitmode]:checked').value==='short');
+  const n=dirCount(), keep=shown, change=n!==Math.min(shown,lastMatch);
+  if(change){ shown=n; renderDir(); }
+  setTimeout(()=>{ window.print(); if(change){ shown=keep; renderDir(); } },80);
+});
+// New Relic rejects lookup values over 255 bytes: keep the busiest features, end with "+N more".
+function fitList(parts,limit){
+  const bytes=s=>new TextEncoder().encode(s).length, full=parts.join(', ');
+  if(bytes(full)<=limit) return full;
+  for(let k=parts.length-1;k>=0;k--){ const s=parts.slice(0,k).concat([`+${parts.length-k} more`]).join(', '); if(bytes(s)<=limit) return s; }
+  return `+${parts.length} more`;
+}
+$('#b-nr').addEventListener('click',()=>{
+  const dmax=new Date(Math.max(...CUR.users.map(u=>+u.last||0)));
+  const ym=`${dmax.getFullYear()}-${String(dmax.getMonth()+1).padStart(2,'0')}`;
+  const iso=d=>isNaN(d)?'':`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  const q=v=>{ v=String(v); return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v; };
+  const dmin=new Date(Math.min(...CUR.users.map(u=>+u.last||Infinity)));
+  const head=['reportMonth','periodStart','periodEnd','email','userName','userType','feature','pageViews','daysActive','totalPageViews','nrqlExecuted','lastActive','latestAccount','featuresUsed'];
+  const rows=[head.join(',')];
+  CUR.users.forEach(u=>{
+    const lc=s=>s.toLowerCase();
+    const parts=Object.entries(u.f).sort((a,b)=>b[1]-a[1]||(lc(a[0])<lc(b[0])?-1:lc(a[0])>lc(b[0])?1:0)).map(([k,v])=>`${k} (${v})`);
+    const fu=parts.length?fitList(parts,255):'No feature activity';
+    const base=r=>[ym,iso(dmin),iso(dmax),u.email,u.name,u.type,r[0],r[1],u.days,u.views,u.nrql,iso(u.last),u.acct,fu].map(q).join(',');
+    const fs=Object.entries(u.f).sort((a,b)=>b[1]-a[1]);
+    if(!fs.length) rows.push(base(['(none)',0])); else fs.forEach(r=>rows.push(base(r)));
+  });
+  const name=`${CFG.table}_${ym}.csv`;
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([rows.join('\n')+'\n'],{type:'text/csv'})); a.download=name; a.click();
+  toast(`Saved ${name}: ${fmt(rows.length-1)} rows`);
+});
+$('#b-save').addEventListener('click',()=>{
+  const html = TEMPLATE.replace(/(<script type="text\/plain" id="csv-current">)[\s\S]*?(<\/script>)/, (m,a,b)=>a+rawCur.replace(/<\/script/gi,'<\\/script')+b)
+                       .replace(/(<script type="text\/plain" id="csv-previous">)[\s\S]*?(<\/script>)/, (m,a,b)=>a+(rawPrev||'__CSV_PREVIOUS__').replace(/<\/script/gi,'<\\/script')+b);
+  const dmax=new Date(Math.max(...CUR.users.map(u=>+u.last||0)));
+  const name=`${CFG.slug}_NewRelic_Usage_${dmax.getFullYear()}-${String(dmax.getMonth()+1).padStart(2,'0')}.html`;
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([html],{type:'text/html'})); a.download=name; a.click();
+  toast(`Saved ${name}`);
+});
+document.querySelectorAll('#mx-n button').forEach(b=>b.onclick=()=>{ mxN=+b.dataset.n; document.querySelectorAll('#mx-n button').forEach(x=>x.setAttribute('aria-pressed',x===b)); render(); });
+document.querySelectorAll('#mx-t button').forEach(b=>b.onclick=()=>{ mxT=b.dataset.t; document.querySelectorAll('#mx-t button').forEach(x=>x.setAttribute('aria-pressed',x===b)); render(); });
+['#q','#ft','#ff','#fs'].forEach(s=>$(s).addEventListener('input',()=>{shown=30;renderDir();}));
+$('#more').onclick=()=>{shown+=30;renderDir();};
+['#th-full','#th-basic'].forEach(s=>$(s).addEventListener('input',renderFit));
+document.querySelectorAll('.step').forEach(b=>b.addEventListener('click',()=>{
+  const inp=document.getElementById(b.dataset.for);
+  inp.value=Math.min(31,Math.max(1,(+inp.value||1)+(+b.dataset.d))); renderFit();
+}));
+
+if(CFG.fullLightDays) $('#th-full').value=CFG.fullLightDays;
+if(CFG.basicHeavyDays) $('#th-basic').value=CFG.basicHeavyDays;
+try{ CUR=load(rawCur); PREV=load(rawPrev); }catch(e){ toast(e.message); }
+if(CUR) render(); else { $('#headline').textContent='Load a MEGA user activity CSV to build the report.'; document.querySelectorAll('section').forEach(s=>s.hidden=true); }
+})();
+</script>
+</body>
+</html>

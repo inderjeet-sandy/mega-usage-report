@@ -1,0 +1,374 @@
+{
+  "name": "Acme - New Relic usage by person and feature",
+  "description": "Monthly MEGA user activity export, loaded from the AcmeUserFeatureUsage lookup table.",
+  "permissions": "PUBLIC_READ_ONLY",
+  "pages": [
+    {
+      "name": "Overview",
+      "description": null,
+      "widgets": [
+        {
+          "title": "",
+          "layout": {
+            "column": 1,
+            "row": 1,
+            "width": 12,
+            "height": 2
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.markdown"
+          },
+          "rawConfiguration": {
+            "text": "## Acme: New Relic usage by person and feature\nData comes from the monthly MEGA user activity export, uploaded to the **AcmeUserFeatureUsage** lookup table. Counts are page views by product area during the export window, so they show what people used, not what their user type allows."
+          }
+        },
+        {
+          "title": "This report covers",
+          "layout": {
+            "column": 1,
+            "row": 3,
+            "width": 4,
+            "height": 2
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.table"
+          },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountIds": [
+                  1000001
+                ],
+                "query": "SELECT uniqueCount(email) AS 'Users' FROM lookup(AcmeUserFeatureUsage) FACET reportMonth, periodStart, periodEnd"
+              }
+            ],
+            "platformOptions": {
+              "ignoreTimeRange": true
+            },
+            "facet": {
+              "showOtherSeries": false
+            }
+          }
+        },
+        {
+          "title": "Who is tracked",
+          "layout": {
+            "column": 5,
+            "row": 3,
+            "width": 8,
+            "height": 2
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.billboard"
+          },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountIds": [
+                  1000001
+                ],
+                "query": "SELECT uniqueCount(email) AS 'Tracked users', filter(uniqueCount(email), WHERE userType = 'FULL') AS 'FULL users', filter(uniqueCount(email), WHERE userType = 'BASIC') AS 'BASIC users', filter(uniqueCount(email), WHERE userType = 'CORE') AS 'CORE users' FROM lookup(AcmeUserFeatureUsage)"
+              }
+            ],
+            "platformOptions": {
+              "ignoreTimeRange": true
+            }
+          }
+        },
+        {
+          "title": "People using each feature",
+          "layout": {
+            "column": 1,
+            "row": 5,
+            "width": 6,
+            "height": 6
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.bar"
+          },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountIds": [
+                  1000001
+                ],
+                "query": "SELECT uniqueCount(email) AS 'People' FROM lookup(AcmeUserFeatureUsage) WHERE feature != '(none)' FACET feature LIMIT 50"
+              }
+            ],
+            "platformOptions": {
+              "ignoreTimeRange": true
+            },
+            "facet": {
+              "showOtherSeries": false
+            }
+          }
+        },
+        {
+          "title": "User types",
+          "layout": {
+            "column": 7,
+            "row": 5,
+            "width": 3,
+            "height": 3
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.pie"
+          },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountIds": [
+                  1000001
+                ],
+                "query": "SELECT uniqueCount(email) FROM lookup(AcmeUserFeatureUsage) FACET userType"
+              }
+            ],
+            "platformOptions": {
+              "ignoreTimeRange": true
+            },
+            "facet": {
+              "showOtherSeries": false
+            }
+          }
+        },
+        {
+          "title": "How often people log in",
+          "layout": {
+            "column": 10,
+            "row": 5,
+            "width": 3,
+            "height": 3
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.bar"
+          },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountIds": [
+                  1000001
+                ],
+                "query": "SELECT uniqueCount(email) AS 'People' FROM lookup(AcmeUserFeatureUsage) FACET cases(WHERE daysActive <= 1 AS '1 day', WHERE daysActive <= 4 AS '2-4 days', WHERE daysActive <= 9 AS '5-9 days', WHERE daysActive <= 14 AS '10-14 days', WHERE daysActive <= 19 AS '15-19 days', WHERE daysActive > 19 AS '20+ days')"
+              }
+            ],
+            "platformOptions": {
+              "ignoreTimeRange": true
+            },
+            "facet": {
+              "showOtherSeries": false
+            }
+          }
+        },
+        {
+          "title": "Most-used accounts",
+          "layout": {
+            "column": 7,
+            "row": 8,
+            "width": 6,
+            "height": 3
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.bar"
+          },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountIds": [
+                  1000001
+                ],
+                "query": "SELECT uniqueCount(email) AS 'People' FROM lookup(AcmeUserFeatureUsage) FACET latestAccount LIMIT 10"
+              }
+            ],
+            "platformOptions": {
+              "ignoreTimeRange": true
+            },
+            "facet": {
+              "showOtherSeries": false
+            }
+          }
+        },
+        {
+          "title": "Feature adoption by user type",
+          "layout": {
+            "column": 1,
+            "row": 11,
+            "width": 12,
+            "height": 5
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.table"
+          },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountIds": [
+                  1000001
+                ],
+                "query": "SELECT uniqueCount(email) AS 'People', filter(uniqueCount(email), WHERE userType = 'FULL') AS 'FULL', filter(uniqueCount(email), WHERE userType = 'BASIC') AS 'BASIC', sum(pageViews) AS 'Page views in feature' FROM lookup(AcmeUserFeatureUsage) WHERE feature != '(none)' FACET feature LIMIT 50"
+              }
+            ],
+            "platformOptions": {
+              "ignoreTimeRange": true
+            },
+            "facet": {
+              "showOtherSeries": false
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "People",
+      "description": null,
+      "widgets": [
+        {
+          "title": "Every user and what they use",
+          "layout": {
+            "column": 1,
+            "row": 1,
+            "width": 12,
+            "height": 7
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.table"
+          },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountIds": [
+                  1000001
+                ],
+                "query": "SELECT max(totalPageViews) AS 'Views', max(daysActive) AS 'Days', max(nrqlExecuted) AS 'NRQL queries' FROM lookup(AcmeUserFeatureUsage) FACET userName AS 'User', email AS 'Email', userType AS 'User type', featuresUsed AS 'Features used (page views)' LIMIT MAX"
+              }
+            ],
+            "platformOptions": {
+              "ignoreTimeRange": true
+            },
+            "facet": {
+              "showOtherSeries": false
+            }
+          }
+        },
+        {
+          "title": "Page views per person and feature",
+          "layout": {
+            "column": 1,
+            "row": 8,
+            "width": 12,
+            "height": 6
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.table"
+          },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountIds": [
+                  1000001
+                ],
+                "query": "SELECT sum(pageViews) AS 'Page views' FROM lookup(AcmeUserFeatureUsage) WHERE feature != '(none)' FACET userName, userType, feature LIMIT MAX"
+              }
+            ],
+            "platformOptions": {
+              "ignoreTimeRange": true
+            },
+            "facet": {
+              "showOtherSeries": false
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "User type vs. activity",
+      "description": null,
+      "widgets": [
+        {
+          "title": "",
+          "layout": {
+            "column": 1,
+            "row": 1,
+            "width": 12,
+            "height": 1
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.markdown"
+          },
+          "rawConfiguration": {
+            "text": "Two lists worth reviewing together. Activity alone doesn't decide someone's user type, so treat these as a starting point. To change the thresholds, edit the number in each query."
+          }
+        },
+        {
+          "title": "FULL users active for 2 days or less",
+          "layout": {
+            "column": 1,
+            "row": 2,
+            "width": 6,
+            "height": 7
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.table"
+          },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountIds": [
+                  1000001
+                ],
+                "query": "SELECT max(daysActive) AS 'Days active', max(totalPageViews) AS 'Page views' FROM lookup(AcmeUserFeatureUsage) WHERE userType = 'FULL' AND daysActive <= 2 FACET userName, email LIMIT MAX"
+              }
+            ],
+            "platformOptions": {
+              "ignoreTimeRange": true
+            },
+            "facet": {
+              "showOtherSeries": false
+            }
+          }
+        },
+        {
+          "title": "BASIC users active for 10 days or more",
+          "layout": {
+            "column": 7,
+            "row": 2,
+            "width": 6,
+            "height": 7
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.table"
+          },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountIds": [
+                  1000001
+                ],
+                "query": "SELECT max(daysActive) AS 'Days active', max(totalPageViews) AS 'Page views' FROM lookup(AcmeUserFeatureUsage) WHERE userType = 'BASIC' AND daysActive >= 10 FACET userName, email LIMIT MAX"
+              }
+            ],
+            "platformOptions": {
+              "ignoreTimeRange": true
+            },
+            "facet": {
+              "showOtherSeries": false
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variables": []
+}
